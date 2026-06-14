@@ -8,6 +8,17 @@ import path from "node:path";
  */
 const PYTHON = process.env.PYTHON_PATH || "python";
 const FFMPEG_LOCATION = process.env.FFMPEG_LOCATION || "";
+// On cloud hosts (EC2 etc.) YouTube blocks datacenter IPs — supply a cookies
+// file and/or a (residential) proxy to get past the bot checks.
+const COOKIES = process.env.YTDLP_COOKIES || "";
+const PROXY = process.env.YTDLP_PROXY || "";
+
+function globalArgs(): string[] {
+  const a: string[] = [];
+  if (COOKIES) a.push("--cookies", COOKIES);
+  if (PROXY) a.push("--proxy", PROXY);
+  return a;
+}
 
 export interface SearchResult {
   id: string;
@@ -28,7 +39,7 @@ function formatDuration(seconds: number | null): string {
 
 function run(args: string[], timeoutMs = 120000): Promise<{ stdout: string; stderr: string }> {
   return new Promise((resolve, reject) => {
-    const child = spawn(PYTHON, ["-m", "yt_dlp", ...args], {
+    const child = spawn(PYTHON, ["-m", "yt_dlp", ...globalArgs(), ...args], {
       windowsHide: true,
     });
     let stdout = "";
