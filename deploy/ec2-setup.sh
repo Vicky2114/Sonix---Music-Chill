@@ -24,18 +24,23 @@ python3 -m pip install -U --break-system-packages yt-dlp || python3 -m pip insta
 python3 -m yt_dlp --version
 
 # MongoDB (local). Skip with: SKIP_MONGO=1 bash deploy/ec2-setup.sh
+# Non-fatal: if it fails, the script continues (use Atlas via MONGODB_URI).
 # Later you can switch to Atlas by just editing MONGODB_URI in .env.local.
 if [ "${SKIP_MONGO:-0}" != "1" ] && ! command -v mongod >/dev/null 2>&1; then
-  echo "==> Installing MongoDB Community 7.0 (local DB)..."
+  echo "==> Installing MongoDB Community 8.0 (local DB)..."
   CODENAME="$(lsb_release -cs)"
-  curl -fsSL https://www.mongodb.org/static/pgp/server-7.0.asc \
-    | sudo gpg -o /usr/share/keyrings/mongodb-server-7.0.gpg --dearmor
-  echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-7.0.gpg ] https://repo.mongodb.org/apt/ubuntu ${CODENAME}/mongodb-org/7.0 multiverse" \
-    | sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list >/dev/null
-  sudo apt-get update -y
-  sudo apt-get install -y mongodb-org
-  sudo systemctl enable --now mongod
-  echo "    Local MongoDB running on mongodb://localhost:27017"
+  if curl -fsSL https://www.mongodb.org/static/pgp/server-8.0.asc \
+        | sudo gpg -o /usr/share/keyrings/mongodb-server-8.0.gpg --dearmor; then
+    echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-8.0.gpg ] https://repo.mongodb.org/apt/ubuntu ${CODENAME}/mongodb-org/8.0 multiverse" \
+      | sudo tee /etc/apt/sources.list.d/mongodb-org-8.0.list >/dev/null
+    if sudo apt-get update -y && sudo apt-get install -y mongodb-org; then
+      sudo systemctl enable --now mongod
+      echo "    Local MongoDB running on mongodb://localhost:27017"
+    else
+      echo "    !! MongoDB install failed — removing repo & continuing. Use Atlas (set MONGODB_URI)."
+      sudo rm -f /etc/apt/sources.list.d/mongodb-org-8.0.list
+    fi
+  fi
 fi
 
 echo "==> Installing app dependencies + building..."
