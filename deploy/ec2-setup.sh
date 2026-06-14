@@ -23,6 +23,21 @@ echo "==> Installing yt-dlp (pip)..."
 python3 -m pip install -U --break-system-packages yt-dlp || python3 -m pip install -U yt-dlp
 python3 -m yt_dlp --version
 
+# MongoDB (local). Skip with: SKIP_MONGO=1 bash deploy/ec2-setup.sh
+# Later you can switch to Atlas by just editing MONGODB_URI in .env.local.
+if [ "${SKIP_MONGO:-0}" != "1" ] && ! command -v mongod >/dev/null 2>&1; then
+  echo "==> Installing MongoDB Community 7.0 (local DB)..."
+  CODENAME="$(lsb_release -cs)"
+  curl -fsSL https://www.mongodb.org/static/pgp/server-7.0.asc \
+    | sudo gpg -o /usr/share/keyrings/mongodb-server-7.0.gpg --dearmor
+  echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-7.0.gpg ] https://repo.mongodb.org/apt/ubuntu ${CODENAME}/mongodb-org/7.0 multiverse" \
+    | sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list >/dev/null
+  sudo apt-get update -y
+  sudo apt-get install -y mongodb-org
+  sudo systemctl enable --now mongod
+  echo "    Local MongoDB running on mongodb://localhost:27017"
+fi
+
 echo "==> Installing app dependencies + building..."
 npm install
 npm run build
@@ -52,10 +67,10 @@ cat <<'NOTE'
 
 NEXT STEPS:
 
-1) MongoDB — either:
-   a) MongoDB Atlas (recommended): set MONGODB_URI in .env.local, OR
-   b) install locally:  sudo apt-get install -y mongodb   (then MONGODB_URI=mongodb://localhost:27017)
-   Restart after editing env:  pm2 restart sonix
+1) MongoDB — local MongoDB is already installed & running on this box.
+   In .env.local use:  MONGODB_URI=mongodb://localhost:27017
+   To switch to Atlas LATER: just change MONGODB_URI (e.g. mongodb+srv://...)
+   and run `pm2 restart sonix`. (Data won't auto-copy between local & Atlas.)
 
 2) Vertex AI — upload a service-account JSON key and set in .env.local:
      GOOGLE_APPLICATION_CREDENTIALS=/home/ubuntu/sonix/sa-key.json
