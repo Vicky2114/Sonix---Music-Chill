@@ -5,6 +5,14 @@ import { generateText } from "./vertex";
 
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
 
+// Master switch for the AI recommendations feature (set AI_ENABLED=false to
+// turn it off, e.g. on a host without Vertex AI credentials configured).
+const AI_ENABLED = (process.env.AI_ENABLED ?? "true").toLowerCase() !== "false";
+
+export function isAiEnabled(): boolean {
+  return AI_ENABLED;
+}
+
 export interface RecoGroup {
   basedOn: string; // e.g. "Arijit Singh" or "Popular right now"
   chips: string[]; // 4-5 short search queries
@@ -73,6 +81,7 @@ async function generateGroups(): Promise<RecoGroup[]> {
 
 /** Grouped recommendations, cached unless taste changed or stale. */
 export async function getRecommendationGroups(force = false): Promise<RecoGroup[]> {
+  if (!AI_ENABLED) return [];
   const db = await getDb();
   const col = db.collection<CacheDoc>("recommendations");
 

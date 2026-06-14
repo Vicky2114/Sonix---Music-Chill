@@ -25,6 +25,7 @@ export default function Home() {
   const [recoGroups, setRecoGroups] = useState<RecoGroup[]>([]);
   const [recoLoading, setRecoLoading] = useState(false);
   const [recoError, setRecoError] = useState("");
+  const [aiEnabled, setAiEnabled] = useState(true);
   const [recentlyPlayed, setRecentlyPlayed] = useState<CatalogEntry[]>([]);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -198,6 +199,7 @@ export default function Home() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to load recommendations");
       setRecoGroups(data.groups || []);
+      setAiEnabled(data.aiEnabled !== false);
     } catch (e) {
       setRecoError(e instanceof Error ? e.message : "Failed to load recommendations");
     } finally {
@@ -391,6 +393,7 @@ export default function Home() {
           {/* Home view: recommendations + recently played when not searching */}
           {!searching && results.length === 0 && (
             <div className="space-y-8">
+              {aiEnabled && (
               <div>
                 <div className="mb-4 mt-2 flex items-center justify-between">
                   <div>
@@ -474,6 +477,7 @@ export default function Home() {
                   </div>
                 )}
               </div>
+              )}
 
               {/* Recently played */}
               {recentlyPlayed.length > 0 && (
@@ -511,6 +515,16 @@ export default function Home() {
                       </button>
                     ))}
                   </div>
+                </div>
+              )}
+
+              {!aiEnabled && recentlyPlayed.length === 0 && (
+                <div className="glass rounded-3xl p-12 text-center">
+                  <p className="text-5xl">🎧</p>
+                  <p className="mt-4 text-lg font-semibold">Find your next song</p>
+                  <p className="mt-1 text-sm text-white/45">
+                    Search a song above or tap the mic.
+                  </p>
                 </div>
               )}
             </div>
