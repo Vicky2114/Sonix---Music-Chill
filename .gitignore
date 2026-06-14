@@ -3,6 +3,11 @@
 # app data (local catalog json)
 /data
 
+# secrets: YouTube cookies / GCP service-account key
+cookies.txt
+*-key.json
+sa-key.json
+
 # dependencies
 /node_modules
 /.pnp
